@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LM Studio Interface with Full Chat Management</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #f5f5f5;
+            --container-bg: white;
+            --text-color: #333;
+            --border-color: #ddd;
+            --user-message-bg: #e3f2fd;
+            --ai-message-bg: #f5f5f5;
+            --header-color: #2c3e50;
+            --sidebar-bg: #f0f2f5;
+            --sidebar-border: #e0e0e0;
+            --chat-item-bg: white;
+            --chat-item-hover: #e8f4fd;
+            --chat-item-active: #d6eaf8;
+            --chat-item-text: #2c3e50;
+            --chat-item-text-muted: #7f8c8d;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+        
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: 300px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--sidebar-border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 40px);
+            overflow: hidden;
+        }
+        
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--sidebar-border);
+        }
+        
+        .sidebar-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--header-color);
+            margin: 0;
+        }
+        
+        .sidebar-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .sidebar-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .sidebar-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .sidebar-btn.delete {
+            background-color: #e74c3c;
+        }
+        
+        .sidebar-btn.delete:hover {
+            background-color: #c0392b;
+        }
+        
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        
+        .chat-item {
+            background-color: var(--chat-item-bg);
+            border: 1px solid var(--sidebar-border);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 60px;
+        }
+        
+        .chat-item:hover {
+            background-color: var(--chat-item-hover);
+        }
+        
+        .chat-item.active {
+            background-color: var(--chat-item-active);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .chat-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--chat-item-text);
+            margin: 0 0 4px 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-height: 1.3;
+        }
+        
+        .chat-preview {
+            font-size: 12px;
+            color: var(--chat-item-text-muted);
+            margin: 0 0 4px 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-height: 1.3;
+        }
+        
+        .chat-time {
+            font-size: 11px;
+            color: var(--chat-item-text-muted);
+            text-align: right;
+            margin-top: 4px;
+        }
+        
+        .chat-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .chat-item:hover .chat-actions {
+            opacity: 1;
+        }
+        
+        .chat-action-btn {
+            background-color: rgba(0, 0, 0, 0.1);
+            color: var(--chat-item-text-muted);
+            border: none;
+            padding: 2px 4px;
+            cursor: pointer;
+            font-size: 10px;
+            border-radius: 3px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .chat-action-btn:hover {
+            background-color: rgba(0, 0, 0, 0.15);
+        }
+        
+        .chat-action-btn.delete {
+            color: #e74c3c;
+        }
+        
+        .chat-action-btn.delete:hover {
+            color: #c0392b;
+        }
+        
+        .chat-action-btn.rename {
+            color: #2ecc71;
+        }
+        
+        .chat-action-btn.rename:hover {
+            color: #27ae60;
+        }
+        
+        .no-chats {
+            text-align: center;
+            color: var(--chat-item-text-muted);
+            font-size: 14px;
+            padding: 40px 0;
+            margin-top: 20px;
+        }
+        
+        /* Main Chat Area Styles */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-left: 20px;
+            height: calc(100vh - 40px);
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: var(--container-bg);
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 0;
+        }
+        
+        .chat-title-display {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--header-color);
+            margin: 0;
+        }
+        
+        .chat-info {
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--chat-item-text-muted);
+        }
+        
+        .chat-info span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: var(--container-bg);
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+            position: relative;
+        }
+        
+        .user-message {
+            background-color: var(--user-message-bg);
+            border-left: 4px solid var(--primary-color);
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        
+        .ai-message {
+            background-color: var(--ai-message-bg);
+            border-left: 4px solid var(--secondary-color);
+            align-self: flex-start;
+        }
+        
+        .typing-indicator {
+            display: none;
+            padding: 10px;
+            color: var(--chat-item-text-muted);
+            font-style: italic;
+            background-color: var(--ai-message-bg);
+            border-radius: 8px;
+            max-width: 80%;
+            margin-left: auto;
+            margin-bottom: 15px;
+        }
+        
+        .input-group {
+            display: flex;
+            margin-top: 20px;
+            padding: 10px 0;
+        }
+        
+        /*input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px 0 0 4px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+        }*/
+
+        /* New textarea styling */
+        #userInput {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px 0 0 4px;  keep the left‑side radius 
+            font-size: 16px;
+            outline: none;
+            transition: border-color .3s;
+            resize: none;  prevent manual resizing 
+            overflow: hidden;  hide scrollbars 
+            min-height: 50px;  start with a reasonable height 
+        }
+
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 4px 4px 4px 4px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        /* Model Selector */
+        .model-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: var(--container-bg);
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        
+        select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: white;
+            margin-bottom: 10px;
+        }
+        
+        .model-info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e3f2fd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        /* Status Messages */
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .info {
+            background-color: #fff3e0;
+            color: #ef6c00;
+            border: 1px solid #ffcc80;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: var(--container-bg);
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--header-color);
+            margin: 0;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--chat-item-text-muted);
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-btn:hover {
+            background-color: var(--sidebar-bg);
+            color: var(--header-color);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .modal-btn.cancel {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+        
+        .modal-btn.save {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .modal-btn.save:hover {
+            background-color: #2980b9;
+        }
+        
+        /* Responsive Adjustments */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                height: auto;
+            }
+            
+            .chat-container {
+                padding: 15px;
+            }
+        }
+/* ----- Reasoning block styling ----- */
+.message.assistant-reasoning {
+    background-color: #e0f7fa;          /* light cyan */
+    border-left: 4px solid #3498db;     /* same as normal AI messages but lighter */
+}
+
+
+/* Make sure icons are coloured correctly */
+.chat-action-btn.delete i { color:#e74c3c; }
+.chat-action-btn.rename  i { color:#2ecc71; }
+
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar with Chat Management -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">Chats</h2>
+                <div class="sidebar-actions">
+                    <button class="sidebar-btn" onclick="createNewChat()">New</button>
+                    <button class="sidebar-btn" onclick="clearAllChats()">Clear</button>
+                </div>
+            </div>
+
+            <div class="chat-list" id="chatList">
+                <!-- Chat items will be populated here -->
+            </div>
+
+            <div class="no-chats" id="noChats">
+                No chats yet. Create a new one to get started!
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="main-content">
+            <div class="chat-header">
+                <h2 class="chat-title-display" id="currentChatTitle">New Chat</h2>
+                <div class="chat-info">
+                    <span><i class="fas fa-robot"></i> <span id="currentModel">No model selected</span></span>
+                    <span><i class="fas fa-clock"></i> <span id="currentChatTime">Just now</span></span>
+                </div>
+            </div>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="message ai-message">Hello! I'm connected to your LM Studio setup. Select a model and start chatting!</div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">AI is typing...</div>
+
+            <div class="model-selector">
+                <label for="modelSelect">Select Model:</label>
+                <select id="modelSelect">
+                    <option value="">Loading available models...</option>
+                </select>
+                <div class="model-info" id="modelInfo"></div>
+            </div>
+
+            <div class="input-group">
+                <!--<input type="text" id="userInput" placeholder="Enter your query here..." autocomplete="off">
+                <button onclick="sendMessage()">Send</button>-->
+                 <!--New: textarea instead of input--> 
+                <textarea id="userInput"
+                          placeholder="Enter your query here..."
+                          autocomplete="off"></textarea>
+
+                <button onclick="sendMessage()">Send</button>
+                <!-- Auto‑Reprompt Switch -->
+                <label style="display:flex;align-items:center;margin-left:10px;">
+                    <input type="checkbox" id="autoRepromptToggle" onchange="toggleAutoReprompt()">
+                    <span style="margin-left:4px;font-size:14px;">Auto Reprompt</span>
+                </label>
+            </div>
+
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <!-- Modal for creating new chat -->
+    <div id="newChatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create New Chat</h2>
+                <button class="close-btn" onclick="closeModal('newChatModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="newChatTitle">Chat Title</label>
+                <input type="text" id="newChatTitle" placeholder="Enter a title for your chat" value="New Chat">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeModal('newChatModal')">Cancel</button>
+                <button class="modal-btn save" onclick="saveNewChat()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for renaming chat -->
+    <div id="renameChatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Rename Chat</h2>
+                <button class="close-btn" onclick="closeModal('renameChatModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="renameChatTitle">New Title</label>
+                <input type="text" id="renameChatTitle" placeholder="Enter a new title for your chat">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeModal('renameChatModal')">Cancel</button>
+                <button class="modal-btn save" onclick="saveRenameChat()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for deleting chat -->
+    <div id="deleteChatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Delete Chat</h2>
+                <button class="close-btn" onclick="closeModal('deleteChatModal')">&times;</button>
+            </div>
+            <p>Are you sure you want to delete this chat? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeModal('deleteChatModal')">Cancel</button>
+                <button class="modal-btn save" onclick="confirmDeleteChat()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+    <script>
+        // Configuration - Using localhost directly for reliability
+        const API_URL = `http://192.168.1.101:1234`;
+
+        // Chat management variables
+        let models = [];
+        let selectedModel = "";
+        let chatHistory = []; // Array to store the complete chat history
+        let chatList = []; // Array to store all chat metadata
+        let currentChatId = null;
+        let currentChatTitle = "New Chat";
+
+        // Check if we have saved chat history in localStorage
+        function loadChatHistory() {
+            const savedChats = localStorage.getItem('lmstudio-chats');
+            if (savedChats) {
+                try {
+                    const parsedChats = JSON.parse(savedChats);
+                    // Validate and clean up chat data
+                    chatList = parsedChats.filter(chat =>
+                        chat.id && chat.title && chat.messages && Array.isArray(chat.messages)
+                    );
+
+                    // If no valid chats, initialize with empty array
+                    if (chatList.length === 0) {
+                        chatList = [];
+                    }
+
+                    // Update the UI
+                    updateChatListUI();
+
+                    // If there are chats, load the first one
+                    if (chatList.length > 0) {
+                        const lastChat = chatList[chatList.length - 1];
+                        loadChatById(lastChat.id);
+                    }
+
+                } catch (e) {
+                    console.error('Error loading chat history:', e);
+                    chatList = [];
+                    updateChatListUI();
+                }
+            } else {
+                chatList = [];
+                updateChatListUI();
+            }
+        }
+
+        // Save chat history to localStorage
+        function saveChatHistory() {
+            if (chatHistory.length === 0) {
+                showStatus('No chat history to save', 'info');
+                return;
+            }
+
+            try {
+                // Ensure all messages have the required structure
+                const validChatHistory = chatHistory.filter(msg =>
+                    msg.role && (msg.role === 'user' || msg.role === 'assistant' || msg.role === 'system') && msg.content
+                );
+
+                // Find the current chat or create a new one if it doesn't exist
+                let currentChat = chatList.find(chat => chat.id === currentChatId);
+
+                if (!currentChat) {
+                    // Create a new chat
+                    currentChat = {
+                        id: Date.now().toString(),
+                        title: currentChatTitle,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                        messages: validChatHistory
+                    };
+                    chatList.unshift(currentChat); // Add to beginning
+                } else {
+                    // Update existing chat
+                    currentChat.messages = validChatHistory;
+                    currentChat.updatedAt = new Date().toISOString();
+                }
+
+                // Save to localStorage
+                localStorage.setItem('lmstudio-chats', JSON.stringify(chatList));
+                showStatus('Chat saved successfully!', 'success');
+
+                // Update the UI
+                updateChatListUI();
+
+            } catch (e) {
+                console.error('Error saving chat history:', e);
+                showStatus('Error saving chat history', 'error');
+            }
+        }
+
+        // Export chat history as a file
+        function exportChatHistory() {
+            if (chatHistory.length === 0) {
+                showStatus('No chat history to export', 'info');
+                return;
+            }
+
+            try {
+                const chatText = chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`).join('\n\n');
+                const blob = new Blob([chatText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `lmstudio-chat-${new Date().toISOString().split('T')[0]}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showStatus('Chat history exported successfully!', 'success');
+            } catch (e) {
+                console.error('Error exporting chat history:', e);
+                showStatus('Error exporting chat history', 'error');
+            }
+        }
+
+        // Clear all chats
+        function clearAllChats() {
+            if (chatList.length === 0) {
+                showStatus('No chats to clear', 'info');
+                return;
+            }
+
+            if (confirm('Are you sure you want to delete all chats? This action cannot be undone.')) {
+                chatList = [];
+                localStorage.removeItem('lmstudio-chats');
+
+                // *** NEW: Reset in‑memory history and UI ***
+                chatHistory = [];                    // clear the array
+                currentChatId = null;
+                currentChatTitle = 'New Chat';
+                document.getElementById('currentChatTitle').textContent = 'New Chat';
+                document.getElementById('currentChatTime').textContent = formatDate(new Date().toISOString());
+                document.getElementById('chatContainer').innerHTML = '';
+
+                updateChatListUI();
+                showStatus('All chats cleared!', 'success');
+                createNewChat();                     // open modal to start a fresh chat
+            }
+        }
+
+
+        // Create a new chat
+        function createNewChat() {
+            // Open the modal
+            openModal('newChatModal');
+            document.getElementById('newChatTitle').value = 'New Chat';
+        }
+
+        // Save new chat from modal
+        function saveNewChat() {
+            const title = document.getElementById('newChatTitle').value.trim() || 'New Chat';
+
+            // Create a new chat
+            const newChat = {
+                id: Date.now().toString(),
+                title: title,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                messages: []
+            };
+
+            // Add to the beginning of the list
+            chatList.unshift(newChat);
+
+            // Save to localStorage
+            localStorage.setItem('lmstudio-chats', JSON.stringify(chatList));
+
+            // Update UI
+            updateChatListUI();
+
+            // Select the new chat
+            loadChatById(newChat.id);
+
+            // Close the modal
+            closeModal('newChatModal');
+        }
+
+        // Load chat by ID
+
+        function loadChatById(chatId) {
+            const chat = chatList.find(c => c.id === chatId);
+            if (!chat) return;
+
+            currentChatId = chat.id;
+            currentChatTitle = chat.title;
+
+            // *** NEW: Reset the history for this chat ***
+            chatHistory = [];                     // <-- clear old messages
+            chat.messages.forEach(msg => {
+                chatHistory.push({ role: msg.role, content: msg.content });
+            });
+
+            /* Update UI */
+            document.getElementById('currentChatTitle').textContent = chat.title;
+            document.getElementById('currentChatTime').textContent = formatDate(chat.updatedAt);
+
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML = '';
+
+            // Add messages
+            chat.messages.forEach(msg => {
+                addMessage(msg.content, msg.role === 'user');
+            });
+
+            /* Update the current chat in the list */
+            chat.updatedAt = new Date().toISOString();
+            updateChatListUI();
+
+            chatContainer.style.display = 'block';
+        }
+
+
+        // Update chat list UI
+        function updateChatListUI() {
+            const chatListElement = document.getElementById('chatList');
+            const noChatsElement = document.getElementById('noChats');
+
+            // Clear existing items
+            chatListElement.innerHTML = '';
+
+            if (chatList.length === 0) {
+                noChatsElement.style.display = 'block';
+                return;
+            }
+
+            noChatsElement.style.display = 'none';
+
+            // Create chat items
+            chatList.forEach(chat => {
+                const chatItem = document.createElement('div');
+                chatItem.className = 'chat-item';
+                chatItem.dataset.id = chat.id;
+
+                // Get the last message content
+                const lastMessage = chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
+                const previewText = lastMessage ? lastMessage.content.substring(0, 80) + (lastMessage.content.length > 80 ? '...' : '') : 'No messages';
+
+                // Format the chat item
+                chatItem.innerHTML = `
+                        <div class="chat-title">${chat.title}</div>
+                        <div class="chat-preview">${previewText}</div>
+                        <div class="chat-time">${formatDate(chat.updatedAt)}</div>
+                        <div class="chat-actions">
+                            <button class="chat-action-btn rename" onclick="renameChat('${chat.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="chat-action-btn delete" onclick="deleteChat('${chat.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+
+                // Add click event to select the chat
+                chatItem.addEventListener('click', function (e) {
+                    // Don't trigger if clicking on a button
+                    if (e.target.closest('.chat-action-btn')) return;
+
+                    loadChatById(chat.id);
+                    // Remove active class from all items
+                    document.querySelectorAll('.chat-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    // Add active class to this item
+                    this.classList.add('active');
+                });
+
+                // Add to the list
+                chatListElement.appendChild(chatItem);
+            });
+
+            // Set active chat
+            const activeItem = document.querySelector('.chat-item[data-id="' + currentChatId + '"]');
+            if (activeItem) {
+                activeItem.classList.add('active');
+            }
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) {
+                return 'Yesterday';
+            } else if (diffDays < 7) {
+                return date.toLocaleDateString();
+            } else {
+                return date.toLocaleDateString();
+            }
+        }
+
+        // Rename chat
+        function renameChat(chatId) {
+            const chat = chatList.find(c => c.id === chatId);
+            if (!chat) return;
+
+            document.getElementById('renameChatTitle').value = chat.title;
+            currentChatId = chatId;
+            openModal('renameChatModal');
+        }
+
+        // Save renamed chat
+        function saveRenameChat() {
+            const newTitle = document.getElementById('renameChatTitle').value.trim();
+            if (!newTitle) {
+                showStatus('Chat title cannot be empty', 'error');
+                return;
+            }
+
+            const chat = chatList.find(c => c.id === currentChatId);
+            if (!chat) return;
+
+            chat.title = newTitle;
+            chat.updatedAt = new Date().toISOString();
+
+            // Update the UI
+            updateChatListUI();
+
+            // Update the current chat title
+            document.getElementById('currentChatTitle').textContent = newTitle;
+
+            // Close the modal
+            closeModal('renameChatModal');
+
+            showStatus('Chat renamed successfully!', 'success');
+        }
+
+        // Delete chat
+        function deleteChat(chatId) {
+            const chat = chatList.find(c => c.id === chatId);
+            if (!chat) return;
+
+            currentChatId = chatId;
+            openModal('deleteChatModal');
+        }
+
+        // Confirm delete chat
+
+        function confirmDeleteChat() {
+            // Store the ID that is being removed
+            const deletedId = currentChatId;
+
+            // Remove from list and storage
+            chatList = chatList.filter(c => c.id !== deletedId);
+            localStorage.setItem('lmstudio-chats', JSON.stringify(chatList));
+
+            updateChatListUI();
+
+            /* If we just deleted the active chat, load another or start new */
+            if (chatList.length > 0) {
+                // Load first remaining chat
+                loadChatById(chatList[0].id);
+            } else {
+                createNewChat();          // no chats left → fresh modal
+            }
+
+            closeModal('deleteChatModal');
+            showStatus('Chat deleted successfully!', 'success');
+        }
+
+
+        // Open modal
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        // Close modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            statusDiv.style.display = 'block';
+
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Add message to chat container (optional extra class)
+        function addMessage(content, isUser, extraClass = '') {
+            const chatContainer = document.getElementById('chatContainer');
+            let baseClass = `message ${isUser ? 'user-message' : 'ai-message'}`;
+            if (extraClass) baseClass += ' ' + extraClass;
+            const messageDiv = document.createElement('div');
+            messageDiv.className = baseClass;
+            messageDiv.textContent = content;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+
+        // Show typing indicator
+        function showTypingIndicator(show) {
+            const typingIndicator = document.getElementById('typingIndicator');
+            typingIndicator.style.display = show ? 'block' : 'none';
+        }
+
+        // Load models from API
+        async function loadModels() {
+            try {
+                // <-- v0 endpoint for full model metadata
+                const response = await fetch(`${API_URL}/api/v0/models`);
+                if (!response.ok) throw new Error(`Failed to load models: ${response.status}`);
+
+                const data = await response.json();
+
+                // Build a local array with the fields we care about
+                models = data.data.map(m => ({
+                    id: m.id,
+                    type: m.type ?? 'unknown',
+                    state: m.state ?? 'unknown',          // loaded / not‑loaded
+                    quantization: m.quantization ?? 'N/A',
+                    max_context_length: m.max_context_length ?? 'N/A'
+                }));
+
+                /* ---------- UI ----------- */
+                const modelSelect = document.getElementById('modelSelect');
+                modelSelect.innerHTML = '<option value="">Select a model...</option>';
+
+                if (models.length === 0) {
+                    modelSelect.innerHTML += '<option value="">No models found</option>';
+                    showStatus('No models available in LM Studio', 'info');
+                    return;
+                }
+
+                // Populate the dropdown
+                models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;                         // keep the raw id string
+                    opt.textContent = `${m.id} (${m.state})`;  // show loaded/unloaded
+                    modelSelect.appendChild(opt);
+                });
+
+                // Pick a default (first loaded if possible)
+                const defaultModel = models.find(m => m.state === 'running') ?? models[0];
+                selectedModel = defaultModel.id;
+                modelSelect.value = selectedModel;
+                updateModelInfo(selectedModel);
+
+                // Inside loadModels() after setting selectedModel:
+                document.getElementById('currentModel').textContent = selectedModel || 'No model selected';
+
+
+
+            } catch (err) {
+                console.error('Error loading models:', err);
+                showStatus(`Failed to load models: ${err.message}`, 'error');
+                document.getElementById('modelSelect').innerHTML =
+                    '<option value="">Error loading models</option>';
+            }
+        }
+
+        function updateModelInfo(modelId) {
+            const div = document.getElementById('modelInfo');
+            if (!modelId) {
+                div.textContent = "Please select a model to see details";
+                return;
+            }
+
+            const m = models.find(x => x.id === modelId);
+            if (!m) {
+                div.textContent = "Model details not available";
+                return;
+            }
+
+            div.innerHTML = `
+            <strong>Model:</strong> ${m.id}<br>
+            <strong>Type:</strong> ${m.type}<br>
+            <strong>Status:</strong> ${m.state}<br>
+            <strong>Quantization:</strong> ${m.quantization}<br>
+            <strong>Max Context:</strong> ${m.max_context_length} tokens<br>
+        `;
+        }
+
+        // ---------- Auto‑Reprompt Feature ----------
+        let autoReprompt = false;
+        let isReprompting = false;
+
+        // ---- sendMessage (merged) ----
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const message = userInput.value.trim();
+
+            if (!message) return;
+            if (!selectedModel) {
+                showStatus("Please select a model first", "error");
+                return;
+            }
+
+            // Add user message
+            addMessage(message, true);
+            userInput.value = '';
+            chatHistory.push({ role: "user", content: message });
+
+            // Show typing indicator
+            showTypingIndicator(true);
+
+            try {
+                const messagesToSend = [
+                    { role: "system", content: "You are a helpful assistant." },
+                    ...chatHistory
+                ];
+
+                const validMessages = messagesToSend.filter(msg =>
+                    msg.role && ['user', 'assistant', 'system'].includes(msg.role) &&
+                    typeof msg.content === 'string' && msg.content.trim() !== ''
+                );
+
+                const response = await fetch(`${API_URL}/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: selectedModel,
+                        messages: validMessages,
+                        temperature: 0.7,
+                        max_tokens: 40000,
+                        stream: true
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(`API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                }
+
+                /* ---------- Handle streaming response ---------- */
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                let reasoningBuffer = '';   // will hold all reasoning text
+                let contentBuffer = '';     // will hold all answer text
+                let buffer = '';            // for incomplete lines
+
+                // Remove any previous AI message placeholder
+                const chatContainer = document.getElementById('chatContainer');
+                const lastMessage = chatContainer.lastElementChild;
+                if (lastMessage && !lastMessage.classList.contains('user-message')) {
+                    lastMessage.remove();
+                }
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // keep incomplete line
+
+                    for (const line of lines) {
+                        if (!line.trim() || !line.startsWith('data:')) continue;
+                        try {
+                            const jsonStr = line.substring(5).trim();
+                            if (jsonStr === '[DONE]') break;
+
+                            const chunk = JSON.parse(jsonStr);
+                            const delta = chunk.choices?.[0]?.delta ?? {};
+
+                            // Accumulate reasoning or content separately
+                            if (delta.reasoning) reasoningBuffer += delta.reasoning;
+                            if (delta.content) contentBuffer += delta.content;
+
+                        } catch (e) {
+                            console.warn("Failed to parse stream chunk:", line);
+                        }
+                    }
+                }
+
+                /* ---------- Finalize: Hide typing indicator and save to history ---------- */
+                showTypingIndicator(false);
+
+                /* 1️⃣ Render the reasoning block first, only if it exists */
+                if (reasoningBuffer.trim() !== '') {
+                    addMessage(reasoningBuffer.trim(), false, 'assistant-reasoning');
+                    chatHistory.push({ role: "assistant", content: reasoningBuffer.trim() });
+                }
+
+                /* 2️⃣ Render the answer block */
+                if (contentBuffer.trim() !== '') {
+                    addMessage(contentBuffer.trim(), false);
+                    chatHistory.push({ role: "assistant", content: contentBuffer.trim() });
+                }
+
+                /* ---------- Persist & notify ---------- */
+                saveChatHistory();
+                showStatus('Message received and saved!', 'success');
+
+                /* ---------- Auto‑Reprompt ---------- */
+                if (autoReprompt && !isReprompting) {
+                    isReprompting = true;
+                    await repromptInternal();      // wait for it to finish
+                    isReprompting = false;         // reset guard
+
+                }
+                /* ---------- NEW: Ask the LLM for a title ---------- */
+                generateChatTitle().catch(err => console.warn("Title generation error:", err));
+            } catch (error) {
+                console.error('Error:', error);
+                showTypingIndicator(false);
+                addMessage("Sorry, I couldn't process your request. Check if LM Studio is running and the model is loaded.", false);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Add this somewhere in the script block – after the variable declarations
+        function toggleAutoReprompt() {
+            // Grab the checkbox element
+            const chk = document.getElementById('autoRepromptToggle');
+            // Update the global flag
+            autoReprompt = chk.checked;
+        }
+        // Add this function after sendMessage() or at the end of the script block
+        async function repromptInternal() {
+            // Find the last user message in the current chat history
+            const lastUser = chatHistory.filter(m => m.role === 'user').slice(-1)[0];
+            if (!lastUser) return;          // nothing to re‑prompt
+
+            // Optionally modify the prompt – e.g. ask for clarification
+            const newPrompt = `verify your answer`;
+
+            // Put it into the input field and send again
+            document.getElementById('userInput').value = newPrompt;
+            await sendMessage();           // this will push a new user message & get a reply
+        }
+
+        /**
+ * Ask the current model to suggest a concise title for the chat.
+ * The function updates:
+ *   • `currentChatTitle` and the header display,
+ *   • the corresponding entry in `chatList`,
+ *   • localStorage (so the title survives reloads).
+ */
+        async function generateChatTitle() {
+            if (!selectedModel) return;          // nothing to do without a model
+
+            const messages = [
+                {
+                    role: "system",
+                    content: "You are an assistant. Based on the conversation so far, suggest a concise title for this chat."
+                },
+                ...chatHistory            // all previous user/assistant/system messages
+            ];
+
+            try {
+                const resp = await fetch(`${API_URL}/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: selectedModel,
+                        messages: messages,
+                        temperature: 0.5,
+                        max_tokens: 50   // keep it short
+                    })
+                });
+
+                if (!resp.ok) throw new Error(`Title generation failed (${resp.status})`);
+
+                const data = await resp.json();
+                const title =
+                    data?.choices?.[0]?.message?.content?.trim() || "Untitled";
+
+                /* Update UI */
+                currentChatTitle = title;
+                document.getElementById('currentChatTitle').textContent = title;
+
+                /* Persist the new title in chatList & localStorage */
+                if (chatList.length > 0) {
+                    const chat = chatList.find(c => c.id === currentChatId);
+                    if (chat) {
+                        chat.title = title;
+                        localStorage.setItem('lmstudio-chats', JSON.stringify(chatList));
+                    }
+                }
+                updateChatListUI();
+            } catch (err) {
+                console.warn("Failed to generate title:", err);
+                /* Optional: fallback to existing title */
+            }
+        }
+
+        // Initialize the application
+        window.onload = function () {
+            loadModels();
+
+
+            // After loading models, attach a change listener
+            document.getElementById('modelSelect').addEventListener('change', function () {
+                const sel = document.getElementById('modelSelect');
+                selectedModel = sel.value;                 // <-- set the new model
+
+                updateModelInfo(selectedModel);            // show details in panel
+
+                /* Update header display */
+                const headerSpan = document.getElementById('currentModel');
+                headerSpan.textContent = selectedModel || 'No model selected';
+
+                showStatus(`Selected model: ${selectedModel}`, 'info');   // optional
+            });
+
+
+            // Initialize chat history
+            chatHistory = [];
+
+            // Add a welcome message to the chat history
+            addMessage("Hello! I'm connected to your LM Studio setup. Select a model and start chatting!", false);
+
+            // Load saved chat data
+            loadChatHistory();
+
+            // Set up event listeners for the sidebar
+            document.getElementById('currentChatTitle').addEventListener('click', function () {
+                if (currentChatId) {
+                    renameChat(currentChatId);
+                }
+
+
+            });
+            // 1️⃣ Grab the input field
+            const userInput = document.getElementById('userInput');
+
+            // 2️⃣ Attach a key‑down handler
+            userInput.addEventListener('keydown', function (e) {
+                // If the pressed key is Enter (key === 'Enter' or keyCode 13)
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    e.preventDefault();   // stop any default form submission
+                    sendMessage();        // trigger the same logic as clicking “Send”
+                }
+
+            });
+
+            // Auto‑growing textarea
+            userInput.addEventListener('input', () => {
+                // Reset height so we can recalc scrollHeight
+                userInput.style.height = 'auto';
+                // Set height to match content (plus a tiny buffer)
+                userInput.style.height = `${userInput.scrollHeight}px`;
+            });
+
+
+        };
+    </script>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+</body>
+</html>
