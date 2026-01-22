@@ -8,8 +8,11 @@ python -m http.server 8000
 
 And you're done. You can now access the interface with your hosting device as a web address on your local network.
 ex:
+
 device ip: 192.168.1.88
+
 server port: 8000
+
 local website: 192.168.1.88:8000
 
 Quirks:
